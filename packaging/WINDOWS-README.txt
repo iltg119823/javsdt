@@ -33,3 +33,11 @@ JavDB temporary login notices or HTTP 403 responses get one delayed retry
 using the same in-memory session. Default delay: 10 seconds.
 Retry-After is respected; a delay over 60 seconds pauses this run instead.
 A second failure pauses normally. No browser cookies or passwords are required.
+
+Maintenance build 6:
+Completed videos are skipped when their matching NFO and required images are
+valid. Existing files are not rewritten. Mixed folders are checked per video.
+This also avoids unnecessary requests when rerunning previously organized folders.
+The setting in the Other Settings section defaults to Yes for existing INI files:
+是否跳过已完成影片？ = 是
+Set it to 否 when you intentionally want to refresh metadata or reorganize.

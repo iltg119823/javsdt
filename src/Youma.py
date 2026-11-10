@@ -116,6 +116,7 @@ def Youma(dir_choose, handler):
     # region（3）整理程序
     # 用户输入“回车”就继续选择文件夹整理
     input_key = ''
+    completed_skipped = 0
     while not input_key:
 
         # region （3.1）准备工作，用户选择需整理的文件夹，校验归类的目标文件夹的合法性
@@ -165,6 +166,10 @@ def Youma(dir_choose, handler):
                         f'>> [{jav_file.No}/{handler.sum_videos_in_choose_dir}]:{jav_file.Name}'
                     )
                     print(f'    >发现车牌: {jav_file.Car}')
+                    if handler.is_already_organized(jav_file) is True:
+                        print('    >已有匹配的NFO及所需图片，跳过已完成影片，不请求网站。')
+                        completed_skipped += 1
+                        continue
                     logger.path_relative = jav_file.Path[len(
                         dir_choose):]  # 影片的相对于所选文件夹的路径，用于报错
                     # endregion
@@ -339,6 +344,7 @@ def Youma(dir_choose, handler):
         # 当前所选文件夹完成
         print('\n当前文件夹完成，', end='')
         logger.print_end(dir_choose)
+        print(f'已跳过 {completed_skipped} 个已完成文件。')
         # input_key = input('回车继续选择文件夹整理: ')
         input_key = "False"
     # endregion
