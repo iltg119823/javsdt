@@ -41,3 +41,9 @@ This also avoids unnecessary requests when rerunning previously organized folder
 The setting in the Other Settings section defaults to Yes for existing INI files:
 是否跳过已完成影片？ = 是
 Set it to 否 when you intentionally want to refresh metadata or reorganize.
+
+Maintenance build 7:
+The observed DMM product name 13dsvr01936 is recognized as DSVR-1936.
+Multipart file names are scanned in natural numeric order.
+Existing INI and metadata caches can still be used.
+HTTP 403 handling is unchanged: one delayed retry, then pause if still denied.

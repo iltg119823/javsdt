@@ -335,7 +335,12 @@ class Handler(object):
     # 辅助: JavFile
     def get_list_jav_files(self, list_sub_files):
         list_jav_files = []  # 存放: 需要整理的jav_file
-        for file_raw in list_sub_files:
+        # Natural numeric ordering keeps _1, _2, _10 multipart files in order.
+        ordered_files = sorted(list_sub_files, key=lambda name: [
+            int(part) if part.isdigit() else part.casefold()
+            for part in re.split(r'(\d+)', name)
+        ])
+        for file_raw in ordered_files:
             file_temp = file_raw.upper()
             if file_temp.endswith(
                     self._tuple_video_types) and not file_temp.startswith('.'):

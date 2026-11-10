@@ -10,6 +10,9 @@ def find_car_youma(file, list_suren_car):
     # Remove advertising domains before searching: 4k688.com@DLDSS-558.mp4.
     file = file.upper()
     file = re.sub(r'(?:HTTPS?://)?(?:[A-Z0-9-]+\.)+(?:COM|NET|ORG|CC|ME|TV|XYZ|TOP|SITE|CLUB|VIP)(?=[:/@ _-]|$)[:/@ _-]*', ' ', file)
+    # Known DMM product form: 13dsvr01936 -> DSVR-1936.
+    # Limit vendor-prefix stripping to this observed catalogue family.
+    file = re.sub(r'(?<![A-Z0-9])13(?=DSVR[-_ ]*\d)', '', file)
     # car_pref 车牌前缀 ABP-，带横杠；car_suf，车牌后缀 123。
     # 先处理特例 T28 车牌
     if re.search(r'(?<![A-Z0-9])T28[-_ ]*\d\d+', file):
