@@ -107,7 +107,7 @@ class BatchControlTests(unittest.TestCase):
                     result = Youma.Youma(str(videos), handler)
                 self.assertEqual(result, 2)
                 self.assertEqual(db.call_count, 1)
-                self.assertEqual(library.call_count, 1)
+                library.assert_not_called()
                 bus.assert_not_called()
                 pending = Path('【可删除】待处理记录.txt').read_text(encoding='utf-8')
                 self.assertTrue(all(str(path) in pending for path in originals))

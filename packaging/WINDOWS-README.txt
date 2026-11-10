@@ -58,3 +58,10 @@ Double-click RepairActors.bat to fill actors in existing NFO files.
 Videos, file names and artwork are not changed by that mode.
 A .nfo.before-actors.bak backup is saved before the first NFO modification.
 Read JELLYFIN-ACTORS.md for library setup, refresh and actor browsing instructions.
+
+Maintenance build 10:
+New metadata comes from JavDB only. Default sites: javdb.com and javdb580.com.
+Double-click ConfigureSites.bat to edit sites for organizing and actor repair.
+Read JAVDB-SITES.md for configuration and failover rules.
+Network/server errors may switch sites; access denials and rate limits do not.
+JavDB may not provide every requested field. Unavailable descriptions remain empty.

@@ -105,9 +105,8 @@ def Youma(dir_choose, handler):
     # 当前程序文件夹 所处的 父文件夹路径
     dir_pwd_father = os.path.dirname(os.getcwd())
     # arzon通行证: 如果需要从arzon获取日语简介，需要先获得合法的arzon网站的cookie，用于通过成人验证。
-    cookie_arzon = handler.get_last_arzon_cookie()
     # 优化特征的字典
-    dict_db_genres, dict_library_genres, dict_bus_genres = better_dict_youma_genres(
+    dict_db_genres, _, _ = better_dict_youma_genres(
         handler.to_language)
     # 用于记录失败次数、失败信息
     logger = Logger()
@@ -197,83 +196,20 @@ def Youma(dir_choose, handler):
                         ]
                         # endregion
 
-                        # region（3.2.2.3）从javlibrary获取信息
-                        status, genres_library = scrape_available(
-                            scrape_from_library, jav_file, jav_model, handler.url_library,
-                            handler.proxy_library, logger)
-                        status_library = status
-                        if status == ScrapeStatusEnum.library_not_found:
-                            logger.record_warn(
-                                f'javlibrary找不到该车牌的信息: {jav_file.Car}，')
-                        elif status == ScrapeStatusEnum.library_multiple_search_results:
-                            logger.record_warn(
-                                f'javlibrary搜索到同车牌的不同视频: {jav_file.Car}，')
-                        # 优化genres_library
-                        genres_library = [
-                            dict_library_genres.get(i, i) for i in genres_library
-                            if not i.startswith('AV OP') and not i.startswith(
-                                'AVOP') and dict_library_genres.get(i, i) != '删除'
-                        ]
-                        # endregion
-
-                        if not jav_model.Javdb and not jav_model.Javlibrary:
-                            if status_db == status_library == ScrapeStatusEnum.interrupted:
+                        if not jav_model.Javdb:
+                            if status_db == ScrapeStatusEnum.interrupted:
                                 pending = list_jav_files[file_index:]
                                 with open('【可删除】待处理记录.txt', 'a', encoding='utf-8') as stream:
-                                    stream.write(f'本轮因主要来源不可用而暂停。所选目录：{dir_choose}\n')
+                                    stream.write(f'JavDB 不可用，本轮暂停。所选目录：{dir_choose}\n')
                                     for item in pending:
                                         stream.write(f'{item.Car}\t{item.Path}\n')
-                                    stream.write('其余子目录尚未继续扫描，请恢复访问后重新选择原目录。\n\n')
-                                print(f'\n主要信息来源均不可用，本轮已暂停。当前目录还有 {len(pending)} 个文件待处理，其他子目录尚未继续扫描。')
-                                print('待处理文件未重命名或移动，已记录到“【可删除】待处理记录.txt”。')
-                                print('请稍后在浏览器确认站点恢复访问，再重新运行；本次没有继续请求后续影片。')
+                                    stream.write('其余子目录尚未继续扫描。\n\n')
+                                print(f'JavDB 暂不可用，本轮暂停；当前目录 {len(pending)} 个文件待处理，其余子目录尚未继续扫描。')
                                 return 2
-                            logger.record_fail(
-                                f'未获取影片信息（来源请求失败或返回不可用页面）: {jav_file.Car}，'
-                                if ScrapeStatusEnum.interrupted in (status_db, status_library)
-                                else f'Javdb和Javlibrary搜索未匹配该车牌: {jav_file.Car}，')
-                            continue  # 结束对该jav的整理
-
-                        # region（3.2.2.4）前往javbus查找【封面】【系列】【特征】.py
-                        status, genres_bus = scrape_available(
-                            scrape_from_bus, jav_file, jav_model, handler.url_bus,
-                            handler.proxy_bus, logger)
-                        if status == ScrapeStatusEnum.bus_multiple_search_results:
-                            logger.record_warn(
-                                f'部分信息可能错误，javbus搜索到同车牌的不同视频: {jav_file.Car_id}，'
-                            )
-                        elif status == ScrapeStatusEnum.bus_not_found:
-                            logger.record_warn(
-                                f'javbus有码找不到该车牌的信息: {jav_file.Car_id}，')
-                        # 优化genres_bus
-                        genres_bus = [
-                            dict_bus_genres.get(i, i) for i in genres_bus
-                            if not i.startswith('AV OP') and not i.startswith(
-                                'AVOP') and dict_bus_genres.get(i, i) != '删除'
-                        ]
-                        # endregion
-
-                        # region（3.2.2.5）arzon找简介
-                        status, cookie_arzon = scrape_from_arzon(
-                            jav_file, jav_model, cookie_arzon,
-                            handler.proxy_arzon)
-                        url_search_arzon = f'https://www.arzon.jp/itemlist.html?t=&m=all&s=&q={jav_file.Car_id.replace("-", "")}'
-                        if status == ScrapeStatusEnum.arzon_exist_but_no_plot:
-                            logger.record_warn(
-                                f'找不到简介，尽管arzon上有搜索结果: {url_search_arzon}，')
-                        elif status == ScrapeStatusEnum.arzon_not_found:
-                            logger.record_warn(
-                                f'未获取到简介（无结果或页面结构变化）: {url_search_arzon}，')
-                        elif status == ScrapeStatusEnum.interrupted:
-                            logger.record_warn(
-                                f'访问arzon失败，需要重新整理该简介: {url_search_arzon}，')
-                        # endregion
-
-                        # 整合genres
-                        genres = list(
-                            set(genres_db + genres_library + genres_bus))
-                        # 我之前错误的写法是 jav_model.Genres = genres，导致genres发生改变后，jav_model.Genres也发生了变化
-                        jav_model.Genres = [genre for genre in genres]
+                            logger.record_fail(f'JavDB 搜索未能唯一匹配该车牌: {jav_file.Car}，')
+                            continue
+                        genres = list(dict.fromkeys(genres_db))
+                        jav_model.Genres = list(genres)
 
                         # 完善jav_model.CompletionStatus
                         jav_model.prefect_completion_status()

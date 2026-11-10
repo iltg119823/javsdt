@@ -17,6 +17,8 @@ from Functions.Utils.Baidu import translate
 from Functions.Utils.Download import download_pic
 from Functions.Progress.Prepare import get_suren_cars
 from Functions.Progress.Completion import is_complete
+from Functions.Web.Sites import load_sites
+from Functions.Web.Javdb import configure_db_sites
 from Functions.Progress.Picture import check_picture, crop_poster_youma, add_watermark_subtitle, add_watermark_divulge
 from Functions.Utils.XML import replace_xml_win, replace_xml
 from Functions.Metadata.Car import find_car_fc2, find_car_youma
@@ -166,6 +168,9 @@ class Handler(object):
         # 网址 javdb
         self.url_db = config_settings.get("其他设置",
                                           "javdb网址").strip().rstrip('/')
+        self.db_sites = load_sites(self.url_db)
+        self.url_db = self.db_sites[0]
+        configure_db_sites(self.db_sites)
         # 网址 javdb
         self._skip_complete = config_settings.get('其他设置', '是否跳过已完成影片？', fallback='是') == '是'
         self._phpsessid = config_settings.get("其他设置",
@@ -952,22 +957,10 @@ class Handler(object):
                 pass
             else:
                 status = False
-                if jav_model.CoverBus:
-                    url_cover = f'{self.url_bus}/pics/cover/{jav_model.CoverBus}'
-                    print('    >从javbus下载封面: ', url_cover)
-                    status = download_pic(url_cover, path_fanart,
-                                          self.proxy_bus)
-                if not status and jav_model.Javdb:
-                    url_cover = f'https://c0.jdbstatic.com/covers/{jav_model.Javdb[:2].lower()}/{jav_model.Javdb}.jpg'
-                    # print('    >从javdb下载封面: ', url_cover)
-                    print('    >下载封面: ...')
-                    status = download_pic(url_cover, path_fanart,
-                                          self.proxy_db)
-                if not status and jav_model.CoverLibrary:
-                    url_cover = jav_model.CoverLibrary
-                    print('    >从dmm下载封面: ', url_cover)
-                    status = download_pic(url_cover, path_fanart,
-                                          self.proxy_dmm)
+                if jav_model.Javdb:
+                    url_cover = getattr(jav_model, 'CoverDb', '') or f'https://c0.jdbstatic.com/covers/{jav_model.Javdb[:2].lower()}/{jav_model.Javdb}.jpg'
+                    print('    >下载JavDB封面: ...')
+                    status = download_pic(url_cover, path_fanart, self.proxy_db)
                 if status:
                     pass
                 else:

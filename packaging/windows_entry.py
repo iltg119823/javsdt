@@ -12,19 +12,24 @@ def main():
     if sys.argv[1:] == ['--self-test']:
         import Youma
         import ActorRepair
+        import ConfigureSites
         from Functions.Metadata.Genre import better_dict_youma_genres
         from Functions.Progress.Prepare import get_suren_cars
         assert all(better_dict_youma_genres('zh'))
         assert get_suren_cars()
         print('Packaged imports and resources verified.')
         return 0
-    print('JavSDT 维护版 9 — 演员关联与已有NFO补全')
+    print('JavSDT 维护版 10 — JavDB来源与自定义站点')
+    settings_mode = sys.argv[1:2] == ['--configure-sites']
     repair_mode = sys.argv[1:2] == ['--repair-actors']
-    raw_args = sys.argv[2:] if repair_mode else sys.argv[1:]
+    raw_args = sys.argv[2:] if repair_mode or settings_mode else sys.argv[1:]
     args = [str(Path(raw_args[0]).resolve())] if raw_args else []
     program_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parents[1] / 'src'
     os.chdir(program_dir)
     try:
+        if settings_mode:
+            import ConfigureSites
+            return ConfigureSites.main()
         if not Path('【点我设置整理规则】.ini').exists():
             import CreateIni  # Generates the default configuration only on first launch.
         if repair_mode:

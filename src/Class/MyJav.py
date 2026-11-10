@@ -70,6 +70,7 @@ class JavModel(object):
         self.Publisher = ''           # 13 发行商
         self.Score = 0                # 14 评分
         self.CoverLibrary = ''        # 15 封面Library
+        self.CoverDb = ''
         self.CoverBus = ''            # 16 封面Bus
         self.CutType = CutTypeEnum.left.value    # 17 裁剪方式
         self.Javdb = ''               # 18 db编号

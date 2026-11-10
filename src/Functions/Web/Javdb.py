@@ -1,3 +1,4 @@
+from urllib.parse import urlsplit, urljoin
 from Functions.Web.Http import get_html
 # -*- coding:utf-8 -*-
 import re
@@ -11,8 +12,36 @@ from Class.MyError import SpecifiedUrlError, SourceUnavailableError
 
 
 # 请求jav在javdb上的网页，返回html
+_db_sites = []
+_active_site = None
+
+
+def configure_db_sites(sites):
+    global _db_sites, _active_site
+    _db_sites = list(sites)
+    _active_site = _db_sites[0] if _db_sites else None
+
+
 def get_db_html(url, proxy):
-    return get_html(url, proxy, ('JavDB', '頁面未找到'), headers={'User-Agent': 'Mozilla/5.0'}, retry_refresh=True)
+    global _active_site
+    origin = next((base for base in _db_sites if url == base or url.startswith(base + '/')), None)
+    sites = [_active_site] + [base for base in _db_sites if base != _active_site] if origin else [None]
+    last_error = None
+    for base in sites:
+        candidate = base + url[len(origin):] if origin else url
+        try:
+            html = get_html(candidate, proxy, ('JavDB', '頁面未找到'),
+                            headers={'User-Agent': 'Mozilla/5.0'}, retry_refresh=True)
+            if base:
+                _active_site = base
+            return html
+        except SourceUnavailableError as error:
+            last_error = error
+            if not error.allow_mirror:
+                raise
+            if base != sites[-1]:
+                print('    >连接或服务器异常，尝试已配置的备用站点。')
+    raise last_error
 
 
 def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
@@ -69,6 +98,13 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
         raise SourceUnavailableError('JavDB 详情页番号不匹配或缺少标题，跳过该结果。')
     jav_model.Car, jav_model.Title = title_parts
     jav_model.Javdb = javdb
+    covers = tree.xpath('//img[contains(concat(" ", normalize-space(@class), " "), " video-cover ")]/@src')
+    if not covers:
+        covers = tree.xpath('//meta[@property="og:image"]/@content')
+    jav_model.CoverDb = urljoin((_active_site + '/v/' + javdb) if _active_site else url_jav_db, covers[0]) if covers else ''
+    descriptions = tree.xpath('//*[@id="description" or @itemprop="description" or contains(concat(" ", normalize-space(@class), " "), " video-description ")]')
+    jav_model.Plot = ' '.join(' '.join(node.itertext()).strip() for node in descriptions).strip()
+
     # Scope metadata to the information panel when present; tolerate translated labels.
     panels = tree.xpath('//*[contains(concat(" ", normalize-space(@class), " "), " video-meta-panel ")]')
     if panels:
