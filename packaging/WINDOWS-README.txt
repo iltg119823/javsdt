@@ -52,3 +52,9 @@ Maintenance build 8:
 Actor links are parsed structurally instead of relying on adjacent HTML tags.
 Actor names are escaped when writing NFO XML. Existing NFO/cache files are not
 automatically refreshed. Infuse actor display still depends on client support.
+
+Maintenance build 9:
+Double-click RepairActors.bat to fill actors in existing NFO files.
+Videos, file names and artwork are not changed by that mode.
+A .nfo.before-actors.bak backup is saved before the first NFO modification.
+Read JELLYFIN-ACTORS.md for library setup, refresh and actor browsing instructions.

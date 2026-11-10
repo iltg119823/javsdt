@@ -10,6 +10,7 @@ from xml.etree.ElementTree import parse, ParseError  # 解析xml格式
 # from aip import AipBodyAnalysis  # 百度ai人体分析
 
 from Class.MyJav import JavFile
+from Functions.Metadata.Actor import normalize_actors
 from Class.MyLogger import record_video_old
 from Class.MyError import TooManyDirectoryLevelsError, DownloadFanartError
 from Functions.Utils.Baidu import translate
@@ -910,7 +911,7 @@ class Handler(object):
                 for i in self._list_extra_genres:
                     f.write(f'  <tag>{self.dict_for_standard[i]}</tag>\n')
             # 写入演员
-            for i in jav_model.Actors:
+            for i in normalize_actors(jav_model.Actors):
                 f.write(f'  <actor>\n'
                         f'    <name>{replace_xml(i)}</name>\n'
                         f'    <type>Actor</type>\n'

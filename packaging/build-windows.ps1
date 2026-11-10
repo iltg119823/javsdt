@@ -14,6 +14,8 @@ if ($LASTEXITCODE -ne 0) { throw 'Packaged executable smoke test failed.' }
 Copy-Item MAINTENANCE.md dist/JavSDT/
 Copy-Item README.md dist/JavSDT/
 Copy-Item LICENSE dist/JavSDT/
+Copy-Item packaging/RepairActors.bat dist/JavSDT/
+Copy-Item packaging/JELLYFIN-ACTORS.md dist/JavSDT/
 Copy-Item packaging/WINDOWS-README.txt dist/JavSDT/README-FIRST.txt
 python -m pip freeze | Out-File -Encoding utf8 dist/JavSDT/build-dependencies.txt
 Compress-Archive -Path dist/JavSDT -DestinationPath dist/JavSDT-Windows10-x64.zip -Force

@@ -11,19 +11,25 @@ def main():
             stream.reconfigure(errors='backslashreplace')
     if sys.argv[1:] == ['--self-test']:
         import Youma
+        import ActorRepair
         from Functions.Metadata.Genre import better_dict_youma_genres
         from Functions.Progress.Prepare import get_suren_cars
         assert all(better_dict_youma_genres('zh'))
         assert get_suren_cars()
         print('Packaged imports and resources verified.')
         return 0
-    print('JavSDT 维护版 8 — 演员信息解析修复')
-    args = [str(Path(sys.argv[1]).resolve())] if len(sys.argv) > 1 else []
+    print('JavSDT 维护版 9 — 演员关联与已有NFO补全')
+    repair_mode = sys.argv[1:2] == ['--repair-actors']
+    raw_args = sys.argv[2:] if repair_mode else sys.argv[1:]
+    args = [str(Path(raw_args[0]).resolve())] if raw_args else []
     program_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parents[1] / 'src'
     os.chdir(program_dir)
     try:
         if not Path('【点我设置整理规则】.ini').exists():
             import CreateIni  # Generates the default configuration only on first launch.
+        if repair_mode:
+            import ActorRepair
+            return ActorRepair.main(args)
         import Youma
         return Youma.main(args)
     except Exception:
