@@ -1,13 +1,37 @@
 """Bounded requests with actionable errors and no interactive prompts."""
 from urllib.parse import urlsplit
 import requests
+from time import monotonic, sleep
 from Class.MyError import SourceUnavailableError
 
 _failed_sources = {}
+_sessions = {}
+_last_request = {}
+MIN_REQUEST_INTERVAL = 3.0
 
 
 def reset_sources():
     _failed_sources.clear()
+    _last_request.clear()
+    for session in _sessions.values():
+        session.close()
+    _sessions.clear()
+
+
+def _request(url, **kwargs):
+    host = urlsplit(url).netloc
+    session = _sessions.get(host)
+    if session is None:
+        session = _sessions[host] = requests.Session()
+    return session.get(url, **kwargs)
+
+
+def _pace(host):
+    if host in _last_request:
+        delay = MIN_REQUEST_INTERVAL - (monotonic() - _last_request[host])
+        if delay > 0:
+            sleep(delay)
+    _last_request[host] = monotonic()
 
 
 def get_html(url, proxy, markers, headers=None):
@@ -17,7 +41,8 @@ def get_html(url, proxy, markers, headers=None):
     reason = '网页内容与预期不符（可能是地址失效、验证页面或网站结构变化）'
     for attempt in range(2):
         try:
-            with requests.get(url, proxies=proxy or None, headers=headers,
+            _pace(host)
+            with _request(url, proxies=proxy or None, headers=headers,
                               timeout=(4, 8)) as response:
                 response.raise_for_status()
                 response.encoding = 'utf-8'

@@ -18,6 +18,9 @@ import Youma
 class ReportedFailureTests(unittest.TestCase):
     def setUp(self):
         reset_sources()
+        pacer = patch('Functions.Web.Http._pace')
+        pacer.start()
+        self.addCleanup(pacer.stop)
 
     def test_advertising_domains_do_not_become_identifiers(self):
         cases = {
@@ -35,11 +38,11 @@ class ReportedFailureTests(unittest.TestCase):
                 self.assertEqual(find_car_youma(filename, get_suren_cars()), expected)
 
     def test_timeout_retries_twice_without_prompt_and_pauses_host(self):
-        with patch('Functions.Web.Http.requests.get', side_effect=requests.Timeout) as get, patch('builtins.input') as prompt:
+        with patch('Functions.Web.Http._request', side_effect=requests.Timeout) as get, patch('builtins.input') as prompt:
             with self.assertRaisesRegex(SourceUnavailableError, 'Timeout'):
                 get_html('https://example.test/search', {}, ('JavDB',))
             self.assertEqual(get.call_count, 2)
-            with patch('Functions.Web.Http.requests.get') as retry:
+            with patch('Functions.Web.Http._request') as retry:
                 with self.assertRaises(SourceUnavailableError):
                     get_html('https://example.test/second', {}, ('JavDB',))
                 retry.assert_not_called()
@@ -49,7 +52,7 @@ class ReportedFailureTests(unittest.TestCase):
         response = requests.Response()
         response.status_code = 503
         response.url = 'https://example.test/search'
-        with patch('Functions.Web.Http.requests.get') as get:
+        with patch('Functions.Web.Http._request') as get:
             get.return_value.__enter__.return_value = response
             with self.assertRaisesRegex(SourceUnavailableError, 'HTTP 503'):
                 get_html(response.url, {}, ('JavDB',))
@@ -85,12 +88,12 @@ class ReportedFailureTests(unittest.TestCase):
             video = Path(directory) / '4k688.com@DLDSS-558.mp4'
             video.write_bytes(b'fixture')
             jav_file = JavFile('DLDSS-558', 'DLDSS-558', video.name, directory, 1, '', 1)
-            handler = Mock(to_language='zh')
+            handler = Mock(to_language='zh', url_db='https://db.example', url_library='https://library.example', proxy_db={}, proxy_library={})
             handler.get_list_jav_files.return_value = [jav_file]
             with patch.object(Youma, 'scrape_from_db', side_effect=SourceUnavailableError('db offline')), \
                     patch.object(Youma, 'scrape_from_library', side_effect=SourceUnavailableError('library offline')), \
                     patch.object(Youma, 'scrape_from_bus') as bus, \
-                    patch.object(Youma, 'Logger'):
+                    patch.object(Youma, 'Logger'), patch.object(Youma, 'open', create=True):
                 Youma.Youma(directory, handler)
             handler.rename_mp4.assert_not_called()
             handler.classify_files.assert_not_called()

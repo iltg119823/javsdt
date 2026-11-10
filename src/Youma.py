@@ -19,7 +19,8 @@ from Functions.Web.Javdb import scrape_from_db
 from Functions.Web.Javlibrary import scrape_from_library
 from Functions.Web.Javbus import scrape_from_bus
 from Functions.Web.Arzon import scrape_from_arzon
-from Functions.Utils.JsonUtility import read_json_to_dict
+from Functions.Utils.JsonUtility import read_json_to_dict, save_metadata
+from urllib.parse import urlsplit
 
 from Functions.Progress.Prepare import get_suren_cars
 from Functions.Metadata.Car import find_car_youma
@@ -31,7 +32,11 @@ def scrape_available(scraper, jav_file, jav_model, url, proxy, logger):
     try:
         status, genres = scraper(jav_file, candidate, url, proxy)
     except SourceUnavailableError as error:
-        logger.record_warn(str(error))
+        host = urlsplit(url).netloc
+        warned = logger.__dict__.setdefault('_paused_source_warnings', set())
+        if host not in warned:
+            warned.add(host)
+            logger.record_warn(str(error))
         return ScrapeStatusEnum.interrupted, []
     if status == ScrapeStatusEnum.success:
         jav_model.__dict__.update(candidate.__dict__)
@@ -152,7 +157,7 @@ def Youma(dir_choose, handler):
             # endregion
 
             # region（3.2.2）开始处理每一部jav文件
-            for jav_file in list_jav_files:
+            for file_index, jav_file in enumerate(list_jav_files):
                 try:
                     # region（3.2.2.1）准备工作
                     # 当前进度
@@ -207,6 +212,17 @@ def Youma(dir_choose, handler):
                         # endregion
 
                         if not jav_model.Javdb and not jav_model.Javlibrary:
+                            if status_db == status_library == ScrapeStatusEnum.interrupted:
+                                pending = list_jav_files[file_index:]
+                                with open('【可删除】待处理记录.txt', 'a', encoding='utf-8') as stream:
+                                    stream.write(f'本轮因主要来源不可用而暂停。所选目录：{dir_choose}\n')
+                                    for item in pending:
+                                        stream.write(f'{item.Car}\t{item.Path}\n')
+                                    stream.write('其余子目录尚未继续扫描，请恢复访问后重新选择原目录。\n\n')
+                                print(f'\n主要信息来源均不可用，本轮已暂停。当前目录还有 {len(pending)} 个文件待处理，其他子目录尚未继续扫描。')
+                                print('待处理文件未重命名或移动，已记录到“【可删除】待处理记录.txt”。')
+                                print('请稍后在浏览器确认站点恢复访问，再重新运行；本次没有继续请求后续影片。')
+                                return 2
                             logger.record_fail(
                                 f'未获取影片信息（来源请求失败或返回不可用页面）: {jav_file.Car}，'
                                 if ScrapeStatusEnum.interrupted in (status_db, status_library)
@@ -242,7 +258,7 @@ def Youma(dir_choose, handler):
                                 f'找不到简介，尽管arzon上有搜索结果: {url_search_arzon}，')
                         elif status == ScrapeStatusEnum.arzon_not_found:
                             logger.record_warn(
-                                f'找不到简介，影片被arzon下架: {url_search_arzon}，')
+                                f'未获取到简介（无结果或页面结构变化）: {url_search_arzon}，')
                         elif status == ScrapeStatusEnum.interrupted:
                             logger.record_warn(
                                 f'访问arzon失败，需要重新整理该简介: {url_search_arzon}，')
@@ -258,14 +274,10 @@ def Youma(dir_choose, handler):
                         jav_model.prefect_completion_status()
 
                     # region（3.2.3）后续完善
-                    # 如果用户 首次整理该片不存在path_json 或 如果这次整理用户正确地输入了翻译账户，则保存json
-                    if os.path.exists(path_json) or handler.prefect_zh(
-                            jav_model):
-                        if not os.path.exists(dir_prefs_jsons):
-                            os.makedirs(dir_prefs_jsons)
-                        with open(path_json, 'w', encoding='utf-8') as f:
-                            json.dump(jav_model.__dict__, f, indent=4)
-                        print(f'    >保存本地json成功: {path_json}')
+                    # Cache successful metadata even when translation is not configured.
+                    handler.prefect_zh(jav_model)
+                    save_metadata(path_json, jav_model)
+                    print(f'    >保存本地json成功: {path_json}')
 
                     # 完善jav_file
                     handler.judge_subtitle_and_divulge(jav_file)
@@ -341,8 +353,8 @@ def main(argv=None):
     youma_handler = ReadConfig()
     if youma_handler is None:
         return 1
-    Youma(dir_choosed, youma_handler)
-    return 0
+    result = Youma(dir_choosed, youma_handler)
+    return result if isinstance(result, int) else 0
 
 
 if __name__ == "__main__":

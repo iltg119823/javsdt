@@ -18,3 +18,12 @@ Failed sources no longer pause for Enter and are skipped for the current run.
 For an existing INI, change the JavDB URL from javdb31.com to https://javdb.com/
 and enable the appropriate proxy settings if required by your network.
 Do not regenerate an existing INI just to change the URL.
+
+Maintenance build 4:
+Requests to each source are spaced by at least 3 seconds. HTTP sessions are reused.
+If both primary sources are unavailable, the batch stops early. Files remaining
+in the current directory are listed in the pending log, not counted as failures.
+Other subdirectories have not been scanned at that point.
+Successful metadata is cached even without translation credentials, and reused
+for multipart videos. Preserve the metadata cache folder beside the program folder.
+A 403 response still requires pausing until normal site access recovers.

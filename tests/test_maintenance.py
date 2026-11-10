@@ -41,7 +41,7 @@ class MaintenanceTests(unittest.TestCase):
         response = MagicMock(text='JavDB 成人影片數據庫')
         response.__enter__.return_value = response
         proxy = {'https': 'http://localhost:8080'}
-        with patch('Functions.Web.Http.requests.get', return_value=response) as get:
+        with patch('Functions.Web.Http._request', return_value=response) as get:
             self.assertEqual(get_db_html('https://example.test', proxy), response.text)
         self.assertEqual(get.call_args.kwargs['proxies'], proxy)
         self.assertIn('headers', get.call_args.kwargs)

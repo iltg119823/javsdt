@@ -17,6 +17,7 @@ def main():
         assert get_suren_cars()
         print('Packaged imports and resources verified.')
         return 0
+    print('JavSDT 维护版 4 — 批量暂停与元数据缓存')
     args = [str(Path(sys.argv[1]).resolve())] if len(sys.argv) > 1 else []
     program_dir = Path(sys.executable).parent if getattr(sys, 'frozen', False) else Path(__file__).resolve().parents[1] / 'src'
     os.chdir(program_dir)

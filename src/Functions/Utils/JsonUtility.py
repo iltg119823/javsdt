@@ -1,6 +1,8 @@
 # -*- coding:utf-8 -*-
 import os
-from json import load
+from json import load, dump
+from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 
 def read_json_to_dict(path):
@@ -8,6 +10,24 @@ def read_json_to_dict(path):
     dict_json = load(f)
     f.close()
     return dict_json
+
+
+def save_metadata(path, model):
+    """Persist complete metadata before renaming; replace the cache atomically."""
+    if not model.Car or not model.Title:
+        raise ValueError('元数据缺少番号或标题，不能保存或整理。')
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    temp_path = None
+    try:
+        with NamedTemporaryFile(mode='w', encoding='utf-8', dir=target.parent,
+                                suffix='.tmp', delete=False) as stream:
+            temp_path = stream.name
+            dump(model.__dict__, stream, ensure_ascii=False, indent=4)
+        os.replace(temp_path, target)
+    finally:
+        if temp_path and os.path.exists(temp_path):
+            os.unlink(temp_path)
 
 
 # 显示某一路径json的内容
