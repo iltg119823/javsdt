@@ -27,6 +27,9 @@ def get_html(url, proxy, markers, headers=None):
                 break
         except requests.exceptions.HTTPError as error:
             reason = f'HTTP {error.response.status_code}'
+            if error.response.status_code in (502, 503, 504) and attempt == 0:
+                print(f'    >访问 {host} 失败（{reason}），再尝试一次...')
+                continue
             break
         except requests.exceptions.RequestException as error:
             reason = type(error).__name__

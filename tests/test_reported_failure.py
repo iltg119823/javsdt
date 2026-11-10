@@ -45,7 +45,7 @@ class ReportedFailureTests(unittest.TestCase):
                 retry.assert_not_called()
             prompt.assert_not_called()
 
-    def test_http_503_is_reported_without_retry_or_html_parsing(self):
+    def test_http_503_retries_once_and_reports_status(self):
         response = requests.Response()
         response.status_code = 503
         response.url = 'https://example.test/search'
@@ -53,7 +53,7 @@ class ReportedFailureTests(unittest.TestCase):
             get.return_value.__enter__.return_value = response
             with self.assertRaisesRegex(SourceUnavailableError, 'HTTP 503'):
                 get_html(response.url, {}, ('JavDB',))
-            self.assertEqual(get.call_count, 1)
+            self.assertEqual(get.call_count, 2)
 
     def test_failed_source_does_not_leave_partial_metadata(self):
         model = JavModel(Title='existing title')

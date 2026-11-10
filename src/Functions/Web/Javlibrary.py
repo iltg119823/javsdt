@@ -1,3 +1,4 @@
+from urllib.parse import urlsplit, urlunsplit
 from Functions.Web.Http import get_html
 # -*- coding:utf-8 -*-
 import re
@@ -10,6 +11,10 @@ from Functions.Utils.XML import replace_xml_win
 
 # 搜索javlibrary，或请求javlibrary上jav所在网页，返回html
 def get_library_html(url, proxy):
+    parts = urlsplit(url)
+    if parts.hostname in ('www.n53i.com', 'n53i.com'):
+        url = urlunsplit(('https', 'www.javlibrary.com', parts.path, parts.query, ''))
+        print('    >旧版 JavLibrary 默认域名已替换为 www.javlibrary.com。')
     return get_html(url, proxy, ('JAVLibrary',), headers={'User-Agent': 'Mozilla/5.0'})
 
 

@@ -1,15 +1,13 @@
 from Functions.Web.Http import get_html
 # -*- coding:utf-8 -*-
-from math import ceil
 import re
 from lxml import etree
 
-import requests
 # from traceback import format_exc
 
 from Functions.Metadata.Car import extract_number_from_car_suf, extract_number_from_car
 from Class.MyEnum import ScrapeStatusEnum
-from Class.MyError import SpecifiedUrlError
+from Class.MyError import SpecifiedUrlError, SourceUnavailableError
 
 
 # 请求jav在javdb上的网页，返回html
@@ -31,92 +29,50 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
             # 指定的javlibrary网址有错误
             raise SpecifiedUrlError(f'你指定的javdb网址有错误: ')
 
-    # 用户没有指定网址，则去搜索
-    else:   # https://javdb9.com/video_codes/PKPD
-        # 当前车牌的车头、车尾
-        pref_current, suf_current = jav_file.Car.split("-")
-        suf_current = int(extract_number_from_car_suf(suf_current))    # 去除车尾 末尾可能存在的字母
-        # 车头的第一页
-        url_pref = f'{url_db}/video_codes/{pref_current}'
-        html_pref = get_db_html(url_pref, proxy_db)
-        # 第一页上的所有box
-        list_cars = etree.HTML(html_pref).xpath('//*[@class="video-title"]/strong/text()')
-        # javdb没有该车头的页面
-        if not list_cars:
-            return ScrapeStatusEnum.db_not_found, []
-        # 第一页的末尾，即最小suf
-        suf_min = int(extract_number_from_car(list_cars[-1]))
-        # 预估 当前车尾 和 第一页的最小车尾 的差距，在第几页
-        no_page = (suf_min - suf_current) // 40 + 2 if suf_min > suf_current else 1
-        # 预估当前车牌 所在页面
-        if no_page > 1:
-            url_page = f'{url_db}/video_codes/{pref_current}?page={no_page}'
-            html_pref = get_db_html(url_page, proxy_db)
-            list_cars = etree.HTML(html_pref).xpath('//*[@class="video-title"]/strong/text()')
-        # 预估的页面的最小和最大suf
-        if list_cars:
-            suf_min_n = int(extract_number_from_car(list_cars[-1]))
-            suf_max_n = int(extract_number_from_car(list_cars[0]))
-        # 预估的页面已经超出范围，比如实际只有10页，预估到12页。
-        else:
-            # 防止预估的no_page太大，比如HODV-21301
-            if no_page > 100:
-                no_page = 100
-            # 往前推,直至找到最后有数据的那一页
-            while True:
-                no_page -= 1
-                url_page = f'{url_db}/video_codes/{pref_current}?page={no_page}'
-                # print(url_page)
-                html_pref = get_db_html(url_page, proxy_db)
-                list_cars = etree.HTML(html_pref).xpath('//*[@class="video-title"]/strong/text()')
-                if list_cars:
-                    # 将往前推的、第一个有数据的这一页,作为预估的页面,取最小和最大suf
-                    suf_min_n = int(extract_number_from_car(list_cars[-1]))
-                    suf_max_n = int(extract_number_from_car(list_cars[0]))
-                    break
-        # 在预估页面中
-        if suf_max_n >= suf_current >= suf_min_n:
-            no_target = find_javdb_code(suf_current, list_cars)
-            if not no_target:
+    # Search the complete identifier rather than estimating a prefix catalogue page.
+    else:
+        from urllib.parse import urlencode
+        url_search = f'{url_db}/search?{urlencode({"q": jav_file.Car, "f": "all"})}'
+        print('    >搜索javdb: ', url_search)
+        html_search = get_db_html(url_search, proxy_db)
+        tree = etree.HTML(html_search)
+        if tree is None:
+            raise SourceUnavailableError('JavDB 返回了无法解析的搜索页。')
+        matches = []
+        for link in tree.xpath('//a[contains(@href, "/v/")]'):
+            codes = link.xpath('.//strong/text()')
+            if any(normalize_car(code) in (normalize_car(jav_file.Car), normalize_car(jav_file.Car_id)) for code in codes):
+                match = re.fullmatch(r'/v/([A-Za-z0-9]+)', link.get('href', ''))
+                if match and match.group(1) not in matches:
+                    matches.append(match.group(1))
+        if not matches:
+            # Only a recognized results layout establishes a genuine no-match result.
+            if tree.xpath('//*[contains(concat(" ", normalize-space(@class), " "), " movie-list ")]') or any(
+                    marker in html_search for marker in ('沒有結果', '没有结果', 'No results')):
                 return ScrapeStatusEnum.db_not_found, []
-            javdb = etree.HTML(html_pref).xpath(f'//*[@class="item"][{no_target}]/a/@href')[0][3:]
-        else:
-            # 如果比 预估页面 的最小车尾 还小，页码依次往后+1；如果比 预估页面 的最大车尾 还大，页码依次往前-1
-            one = 1 if suf_current < suf_min_n else -1
-            while True:
-                no_page += one
-                if no_page == 0:
-                    return ScrapeStatusEnum.db_not_found, []
-                url_page_next = f'{url_db}/video_codes/{pref_current}?page={no_page}'
-                html_pref_next = get_db_html(url_page_next, proxy_db)
-                list_cars_next = etree.HTML(html_pref_next).xpath('//*[@class="video-title"]/strong/text()')
-                # 这一页已经没有内容了
-                if not list_cars_next:
-                    return ScrapeStatusEnum.db_not_found, []
-                # 有内容,匹配下
-                no_target = find_javdb_code(suf_current, list_cars_next)
-                # 找到了退出
-                if no_target:
-                    javdb = etree.HTML(html_pref_next).xpath(f'//*[@class="item"][{no_target}]/a/@href')[0][3:]
-                    break
-                # 当前车牌suf在这一首尾之间,但还是找不到,则退出
-                suf_min_next = int(extract_number_from_car(list_cars_next[-1]))
-                suf_max_next = int(extract_number_from_car(list_cars_next[0]))
-                if suf_current in range(suf_min_next, suf_max_next + 1):
-                    return ScrapeStatusEnum.db_not_found, []
+            raise SourceUnavailableError('JavDB 未返回可识别的搜索结果，可能需要验证、登录，或网站结构已变化。')
+        if len(matches) > 1:
+            return ScrapeStatusEnum.db_multiple_search_results, []
+        javdb = matches[0]
 
     # 得到 javdb
     url_jav_db = f'{url_db}/v/{javdb}'
     print('    >前往javdb: ', url_jav_db)
     html_jav_db = get_db_html(url_jav_db, proxy_db)
-    # <title> BKD-171 母子交尾 ～西会津路～ 中森いつき | JavDB 成人影片資料庫及磁鏈分享 </title>
-    car_title = re.search(r'title> (.+) \| JavDB', html_jav_db).group(1)
-    list_car_title = car_title.split(' ', 1)
-    jav_model.Car = list_car_title[0]  # 围绕该jav的所有信息
-    jav_model.Title = list_car_title[1]
+    tree = etree.HTML(html_jav_db)
+    if tree is None:
+        raise SourceUnavailableError('JavDB 返回了无法解析的详情页。')
+    title = ' '.join(tree.xpath('//title/text()')).strip()
+    title = re.split(r'\s*[|｜]\s*JavDB', title, maxsplit=1)[0].strip()
+    title_parts = title.split(None, 1)
+    if len(title_parts) != 2 or normalize_car(title_parts[0]) not in (normalize_car(jav_file.Car), normalize_car(jav_file.Car_id)):
+        raise SourceUnavailableError('JavDB 详情页番号不匹配或缺少标题，跳过该结果。')
+    jav_model.Car, jav_model.Title = title_parts
     jav_model.Javdb = javdb
-    # 带着主要信息的那一块 複製番號" data-clipboard-text="BKD-171">
-    html_jav_db = re.search(r'複製番號([\s\S]+?)存入清單', html_jav_db, re.DOTALL).group(1)
+    # Scope metadata to the information panel when present; tolerate translated labels.
+    panels = tree.xpath('//*[contains(concat(" ", normalize-space(@class), " "), " video-meta-panel ")]')
+    if panels:
+        html_jav_db = etree.tostring(panels[0], encoding='unicode', method='html')
     # 系列 "/series/RJmR">○○に欲望剥き出しでハメまくった中出し記録。</a>
     seriesg = re.search(r'series/.+?">(.+?)</a>', html_jav_db)
     jav_model.Series = seriesg.group(1) if seriesg else ''
@@ -124,7 +80,7 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
     releaseg = re.search(r'(\d\d\d\d-\d\d-\d\d)', html_jav_db)
     jav_model.Release = releaseg.group(1) if releaseg else '1970-01-01'
     # 片长 value">175 分鍾<
-    runtimeg = re.search(r'value">(\d+) 分鍾<', html_jav_db)
+    runtimeg = re.search(r'value">\s*(\d+)\s*(?:分鍾|分鐘|分钟|minute)', html_jav_db)
     jav_model.Runtime = int(runtimeg.group(1)) if runtimeg else 0
     # 导演 /directors/WZg">NABE<
     directorg = re.search(r'directors/.+?">(.+?)<', html_jav_db)
@@ -136,7 +92,7 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
     publisherg = re.search(r'publishers.+?">(.+?)</a><', html_jav_db)
     jav_model.Publisher = publisherg.group(1) if publisherg else ''
     # 评分 star gray"></i></span>&nbsp;3.75分
-    scoreg = re.search(r'star gray"></i></span>&nbsp;(.+?)分', html_jav_db)
+    scoreg = re.search(r'(?<![\d.])([0-5](?:\.\d+)?)\s*分(?![鐘鍾钟])', html_jav_db)
     jav_model.Score = int(float(scoreg.group(1)) * 20) if scoreg else 0
     # 演员们 /actors/M0xA">上川星空</a>  actors/P9mN">希美まゆ</a><strong class="symbol female
     actors = re.findall(r'actors/.+?">(.+?)</a><strong class="symbol female', html_jav_db)
@@ -156,3 +112,9 @@ def find_javdb_code(suf_current, list_cars):
         if int(extract_number_from_car(suf_str)) == suf_current:
             return i + 1    # 第几个，在list的下标基础上+1
     return ''
+
+
+def normalize_car(value):
+    """Compare catalogue identifiers while tolerating separators and zero padding."""
+    match = re.fullmatch(r'([A-Z]+|T28)[-_ ]*(\d+)', value.strip().upper())
+    return (match.group(1), int(match.group(2))) if match else value.strip().upper()

@@ -176,6 +176,7 @@ def Youma(dir_choose, handler):
                         status, genres_db = scrape_available(
                             scrape_from_db, jav_file, jav_model, handler.url_db,
                             handler.proxy_db, logger)
+                        status_db = status
                         if status == ScrapeStatusEnum.db_not_found:
                             logger.record_warn(
                                 f'javdb找不到该车牌的信息: {jav_file.Car}，')
@@ -190,6 +191,7 @@ def Youma(dir_choose, handler):
                         status, genres_library = scrape_available(
                             scrape_from_library, jav_file, jav_model, handler.url_library,
                             handler.proxy_library, logger)
+                        status_library = status
                         if status == ScrapeStatusEnum.library_not_found:
                             logger.record_warn(
                                 f'javlibrary找不到该车牌的信息: {jav_file.Car}，')
@@ -206,7 +208,9 @@ def Youma(dir_choose, handler):
 
                         if not jav_model.Javdb and not jav_model.Javlibrary:
                             logger.record_fail(
-                                f'Javdb和Javlibrary都找不到该车牌信息: {jav_file.Car}，')
+                                f'未获取影片信息（来源请求失败或返回不可用页面）: {jav_file.Car}，'
+                                if ScrapeStatusEnum.interrupted in (status_db, status_library)
+                                else f'Javdb和Javlibrary搜索未匹配该车牌: {jav_file.Car}，')
                             continue  # 结束对该jav的整理
 
                         # region（3.2.2.4）前往javbus查找【封面】【系列】【特征】.py

@@ -67,7 +67,7 @@ try:
     config_settings.set("原影片文件的性质", "FC2", "FC2")
     config_settings.add_section("其他设置")
     config_settings.set("其他设置", "简繁中文？", "简")
-    config_settings.set("其他设置", "javlibrary网址", "https://www.n53i.com/")
+    config_settings.set("其他设置", "javlibrary网址", "https://www.javlibrary.com/")
     config_settings.set("其他设置", "javbus网址", "https://www.buscdn.me")
     config_settings.set("其他设置", "javdb网址", "https://javdb.com/")
     config_settings.set("其他设置", "arzon的phpsessid", "")
