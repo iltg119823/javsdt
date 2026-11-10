@@ -109,8 +109,8 @@ class Handler(object):
         # 代理端口
         custom_proxy = config_settings.get("局部代理", "代理端口").strip()
         # 代理，如果为空则效果为不使用
-        proxys = {'http': f'http://{custom_proxy}', 'https': f'https://{custom_proxy}'} \
-            if config_settings.get("局部代理", "http还是socks5？") == '是' \
+        proxys = {'http': f'http://{custom_proxy}', 'https': f'http://{custom_proxy}'} \
+            if config_settings.get("局部代理", "http还是socks5？").strip().lower() in ('http', '是') \
             else {'http': f'socks5://{custom_proxy}', 'https': f'socks5://{custom_proxy}'}
         # 是否 使用局部代理
         self._bool_proxy = config_settings.get(

@@ -1,6 +1,4 @@
 # -*- coding:utf-8 -*-
-from distutils.command.build import build
-from importlib.resources import path
 import os
 import sys
 import json
@@ -167,8 +165,8 @@ def Youma(dir_choose, handler):
                                 f'javdb找不到该车牌的信息: {jav_file.Car}，')
                         # 优化genres_db
                         genres_db = [
-                            dict_db_genres[i] for i in genres_db
-                            if dict_db_genres[i] != '删除'
+                            dict_db_genres.get(i, i) for i in genres_db
+                            if dict_db_genres.get(i, i) != '删除'
                         ]
                         # endregion
 
@@ -184,9 +182,9 @@ def Youma(dir_choose, handler):
                                 f'javlibrary搜索到同车牌的不同视频: {jav_file.Car}，')
                         # 优化genres_library
                         genres_library = [
-                            dict_library_genres[i] for i in genres_library
+                            dict_library_genres.get(i, i) for i in genres_library
                             if not i.startswith('AV OP') and not i.startswith(
-                                'AVOP') and dict_library_genres[i] != '删除'
+                                'AVOP') and dict_library_genres.get(i, i) != '删除'
                         ]
                         # endregion
 
@@ -208,9 +206,9 @@ def Youma(dir_choose, handler):
                                 f'javbus有码找不到该车牌的信息: {jav_file.Car_id}，')
                         # 优化genres_bus
                         genres_bus = [
-                            dict_bus_genres[i] for i in genres_bus
+                            dict_bus_genres.get(i, i) for i in genres_bus
                             if not i.startswith('AV OP') and not i.startswith(
-                                'AVOP') and dict_bus_genres[i] != '删除'
+                                'AVOP') and dict_bus_genres.get(i, i) != '删除'
                         ]
                         # endregion
 
@@ -314,13 +312,18 @@ def Youma(dir_choose, handler):
     # endregion
 
 
-if __name__ == "__main__":
-    if len(sys.argv) == 1:
-        dir_choosed = choose_directory()
-    else:
-        dir_choosed = sys.argv[1]
-    dir_choosed = CopyVideoOut(dir_choosed)
+def main(argv=None):
+    args = sys.argv[1:] if argv is None else argv
+    dir_choosed = args[0] if args else choose_directory()
+    if not dir_choosed or not os.path.isdir(dir_choosed):
+        print('请选择有效的影片文件夹。')
+        return 1
     youma_handler = ReadConfig()
     if youma_handler is None:
-        exit(0)
+        return 1
     Youma(dir_choosed, youma_handler)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

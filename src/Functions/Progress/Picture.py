@@ -120,7 +120,7 @@ def add_watermark_subtitle(path_poster):
     scroll_wide = int(img_poster.height/4)
     # 打开“中文字幕”条幅，缩小到合适poster的尺寸
     watermark_subtitle = Image.open('StaticFiles/subtitle.png')
-    watermark_subtitle = watermark_subtitle.resize((scroll_wide, scroll_wide), Image.ANTIALIAS)
+    watermark_subtitle = watermark_subtitle.resize((scroll_wide, scroll_wide), Image.Resampling.LANCZOS)
     r, g, b, a = watermark_subtitle.split()    # 获取颜色通道，保持png的透明性
     # 条幅在poster上摆放的位置。左上角（0，0）
     img_poster.paste(watermark_subtitle, (0, 0), mask=a)
@@ -139,7 +139,7 @@ def add_watermark_divulge(path_poster):
     scroll_wide = int(h/4)
     # 打开条幅，缩小到合适poster的尺寸
     watermark_divulge = Image.open('StaticFiles/divulge.png')
-    watermark_divulge = watermark_divulge.resize((scroll_wide, scroll_wide), Image.ANTIALIAS)
+    watermark_divulge = watermark_divulge.resize((scroll_wide, scroll_wide), Image.Resampling.LANCZOS)
     r, g, b, a = watermark_divulge.split()    # 获取颜色通道，保持png的透明性
     # 条幅在poster上摆放的位置。左上角（x_left，0）
     x_left = w - scroll_wide

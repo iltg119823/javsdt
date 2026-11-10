@@ -1,0 +1,31 @@
+name: Build Windows 10 x64 package
+on:
+  push:
+    branches: [master]
+    paths:
+      - "src/**"
+      - "packaging/**"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/windows-build.yml"
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          architecture: x64
+      - name: Test and build
+        shell: pwsh
+        run: ./packaging/build-windows.ps1
+      - uses: actions/upload-artifact@v4
+        with:
+          name: JavSDT-Windows10-x64
+          path: dist/JavSDT-Windows10-x64.zip
+          if-no-files-found: error
+          retention-days: 14

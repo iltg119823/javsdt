@@ -1,6 +1,6 @@
 # -*- coding:utf-8 -*-
-import os
-import xlrd
+from pathlib import Path
+from openpyxl import load_workbook
 
 
 # 功能: 得到优化的特征字典
@@ -22,15 +22,15 @@ def better_dict_genres(website, to_language):
     # 简繁中文，3简体 4繁体
     col_chinese = 3 if to_language == 'zh' else 4
     # 打开Excel文件
-    path_xlsx = 'StaticFiles/【特征对照表】.xlsx' if os.path.exists('StaticFiles/【特征对照表】.xlsx') else '../../【特征对照表】.xlsx'
-    # xlsxPath = '【特征对照表】.xlsx'
-    excel = xlrd.open_workbook(path_xlsx)
-    sheet = excel.sheet_by_name('有码')    # excel中的某一sheet
-    row = sheet.nrows  # 总行数
-    for i in range(1, row):
-        list_row = sheet.row_values(i)  # i行的list
-        if list_row[col]:
-            dict_genres[list_row[col]] = list_row[col_chinese]    # 原特征 和 优化后的中文特征 对应
+    path_xlsx = Path(__file__).resolve().parents[2] / 'StaticFiles' / '【特征对照表】.xlsx'
+    excel = load_workbook(path_xlsx, read_only=True, data_only=True)
+    try:
+        sheet = excel['有码']
+        for list_row in sheet.iter_rows(min_row=2, values_only=True):
+            if list_row[col]:
+                dict_genres[list_row[col]] = list_row[col_chinese] or ''
+    finally:
+        excel.close()
     return dict_genres
 
 

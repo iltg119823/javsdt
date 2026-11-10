@@ -16,12 +16,11 @@ def get_db_html(url, proxy):
     headers = {
         "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
                       "Chrome/86.0.4240.198 Safari/537.36",
-        "accept-encodin": "gzip, deflate, br",
     }
     for retry in range(1, 11):
         try:
             if proxy:
-                rqs = requests.get(url, header=headers, proxies=proxy, timeout=(6, 7))
+                rqs = requests.get(url, headers=headers, proxies=proxy, timeout=(6, 7))
             else:
                 rqs = requests.get(url, headers=headers, timeout=(6, 7))
         except requests.exceptions.ProxyError:

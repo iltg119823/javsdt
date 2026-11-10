@@ -22,16 +22,42 @@
 ## 2、[使用说明(还没写完)](https://github.com/javsdt/javsdt/wiki)  
 [旧版的使用说明从蓝奏云下载](https://junerain.lanzoui.com/ib0qozg)  
 
-## 3、【其他开发者】运行环境：  
-  python3.7.6 发行版是pyinstaller打包的exe  
-    pip install requests==2.20.0（安装2.25.1报错ProxyError无法使用http代理）  
-    pip install Pillow  
-    pip install baidu-aip  
-    pip install pysocks  
-    pip install [cloudscraper](https://github.com/VeNoMouS/cloudscraper)（目前版本暂时不需要）  
-    pip install xlrd==1.2.0（安装2.2.1无法读取xlsx）  
-   几个jav的py都是独立执行的，加了很多很多注释，希望能理解其中踩过的坑。  
-   
+## 3、维护版运行环境
+
+建议使用 Python 3.12（已验证）；依赖声明以 requirements.txt 为准。
+
+```sh
+python -m venv .venv
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
+# source .venv/bin/activate
+python -m pip install -r requirements.txt
+cd src
+python CreateIni.py
+python Youma.py "D:\待整理影片"
+```
+
+首次使用才运行 `CreateIni.py`，它会覆盖当前目录的配置。已有配置请先备份，
+并在 `src` 目录运行程序以使用现有配置与图片资源。不传路径时使用目录选择器，
+Linux 的图形选择器需要系统安装 tkinter。
+
+先在少量影片的副本上试运行；整理会按配置重命名、移动文件。
+维护版直接扫描所选目录及子目录，取消原先启动时自动搬运到 Build 的步骤。
+旧配置可继续使用；HTTP 代理类型填写 `http`，SOCKS 代理填写 `socks5`。
+
+默认数据源地址来自 2022 年，不能保证仍可使用。2026-11-10 当前云环境探测中，
+`javdb31.com` 和 `www.n53i.com` 返回 HTTP 503；这不能单独证明域名永久失效。
+请在配置“其他设置”中填写你能正常访问的对应站点地址。本次维护未确认在线网页
+解析、验证码或反爬机制兼容性，也未打包 Windows exe。
+
+验证命令（仓库根目录）：
+
+```sh
+python -m unittest discover -s tests -v
+python -m pip check
+```
+
 ## 4、工作流程：  
     （1）用户选择文件夹，遍历路径下的所有文件。  
     （2）文件是jav，取车牌号，到javXXX网站搜索影片找到对应网页。  
