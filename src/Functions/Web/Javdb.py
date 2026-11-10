@@ -12,7 +12,7 @@ from Class.MyError import SpecifiedUrlError, SourceUnavailableError
 
 # 请求jav在javdb上的网页，返回html
 def get_db_html(url, proxy):
-    return get_html(url, proxy, ('JavDB', '頁面未找到'), headers={'User-Agent': 'Mozilla/5.0'})
+    return get_html(url, proxy, ('JavDB', '頁面未找到'), headers={'User-Agent': 'Mozilla/5.0'}, retry_refresh=True)
 
 
 def scrape_from_db(jav_file, jav_model, url_db, proxy_db):

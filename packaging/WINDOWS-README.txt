@@ -27,3 +27,9 @@ Other subdirectories have not been scanned at that point.
 Successful metadata is cached even without translation credentials, and reused
 for multipart videos. Preserve the metadata cache folder beside the program folder.
 A 403 response still requires pausing until normal site access recovers.
+
+Maintenance build 5:
+JavDB temporary login notices or HTTP 403 responses get one delayed retry
+using the same in-memory session. Default delay: 10 seconds.
+Retry-After is respected; a delay over 60 seconds pauses this run instead.
+A second failure pauses normally. No browser cookies or passwords are required.
