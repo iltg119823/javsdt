@@ -912,7 +912,7 @@ class Handler(object):
             # 写入演员
             for i in jav_model.Actors:
                 f.write(f'  <actor>\n'
-                        f'    <name>{i}</name>\n'
+                        f'    <name>{replace_xml(i)}</name>\n'
                         f'    <type>Actor</type>\n'
                         f'  </actor>\n')
             f.write('</movie>\n')

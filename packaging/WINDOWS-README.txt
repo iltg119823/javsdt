@@ -47,3 +47,8 @@ The observed DMM product name 13dsvr01936 is recognized as DSVR-1936.
 Multipart file names are scanned in natural numeric order.
 Existing INI and metadata caches can still be used.
 HTTP 403 handling is unchanged: one delayed retry, then pause if still denied.
+
+Maintenance build 8:
+Actor links are parsed structurally instead of relying on adjacent HTML tags.
+Actor names are escaped when writing NFO XML. Existing NFO/cache files are not
+automatically refreshed. Infuse actor display still depends on client support.

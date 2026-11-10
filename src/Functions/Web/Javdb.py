@@ -94,14 +94,12 @@ def scrape_from_db(jav_file, jav_model, url_db, proxy_db):
     # 评分 star gray"></i></span>&nbsp;3.75分
     scoreg = re.search(r'(?<![\d.])([0-5](?:\.\d+)?)\s*分(?![鐘鍾钟])', html_jav_db)
     jav_model.Score = int(float(scoreg.group(1)) * 20) if scoreg else 0
-    # 演员们 /actors/M0xA">上川星空</a>  actors/P9mN">希美まゆ</a><strong class="symbol female
-    actors = re.findall(r'actors/.+?">(.+?)</a><strong class="symbol female', html_jav_db)
-    jav_model.Actors = [i.strip() for i in actors]
+    # Parse actor links structurally; whitespace and gender-label markup vary.
+    jav_model.Actors = extract_actors(panels[0] if panels else tree)
     str_actors = ' '.join(jav_model.Actors)
     # 去除末尾的标题 javdb上的演员不像javlibrary使用演员最熟知的名字
     if str_actors and jav_model.Title.endswith(str_actors):
         jav_model.Title = jav_model.Title[:-len(str_actors)].strip()
-    # print('    >演员: ', actors)
     # 特征 /tags?c7=8">精选、综合</a>
     genres_db = re.findall(r'tags.+?">(.+?)</a>', html_jav_db)
     return ScrapeStatusEnum.success, genres_db
@@ -118,3 +116,17 @@ def normalize_car(value):
     """Compare catalogue identifiers while tolerating separators and zero padding."""
     match = re.fullmatch(r'([A-Z]+|T28)[-_ ]*(\d+)', value.strip().upper())
     return (match.group(1), int(match.group(2))) if match else value.strip().upper()
+
+
+def extract_actors(scope):
+    actors = []
+    for link in scope.xpath('.//a[contains(@href, "/actors/")]'):
+        sibling = link.getnext()
+        classes = sibling.get('class', '').split() if sibling is not None else []
+        # Retain the original female-cast behavior where explicit male labels exist.
+        if 'male' in classes and 'female' not in classes:
+            continue
+        name = ' '.join(''.join(link.itertext()).split())
+        if name and name not in actors:
+            actors.append(name)
+    return actors

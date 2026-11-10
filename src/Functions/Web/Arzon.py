@@ -107,7 +107,7 @@ def scrape_from_arzon(jav_file, jav_model, cookies, proxy):
                 continue
             # 不是成人验证，也没有简介
             else:
-                jav_model.Plot = '【影片下架，暂无简介】'
+                jav_model.Plot = '【暂无简介】'
                 return ScrapeStatusEnum.arzon_not_found, cookies
     input('>>请检查你的网络环境是否可以通过成人验证: https://www.arzon.jp/')
     return ScrapeStatusEnum.interrupted, cookies
