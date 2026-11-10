@@ -2,6 +2,7 @@
 import os
 import sys
 import json
+from copy import deepcopy
 from os.path import join
 from shutil import move
 from traceback import format_exc
@@ -10,7 +11,8 @@ from Class.MyHandler import Handler
 from Class.MyEnum import ScrapeStatusEnum
 from Class.MyLogger import Logger
 from Class.MyJav import JavModel
-from Class.MyError import TooManyDirectoryLevelsError, SpecifiedUrlError
+from Class.MyError import TooManyDirectoryLevelsError, SpecifiedUrlError, SourceUnavailableError
+from Functions.Web.Http import reset_sources
 from Functions.Progress.User import choose_directory
 from Functions.Metadata.Genre import better_dict_youma_genres
 from Functions.Web.Javdb import scrape_from_db
@@ -21,6 +23,19 @@ from Functions.Utils.JsonUtility import read_json_to_dict
 
 from Functions.Progress.Prepare import get_suren_cars
 from Functions.Metadata.Car import find_car_youma
+
+
+def scrape_available(scraper, jav_file, jav_model, url, proxy, logger):
+    # Commit metadata only after a complete, successful source response.
+    candidate = deepcopy(jav_model)
+    try:
+        status, genres = scraper(jav_file, candidate, url, proxy)
+    except SourceUnavailableError as error:
+        logger.record_warn(str(error))
+        return ScrapeStatusEnum.interrupted, []
+    if status == ScrapeStatusEnum.success:
+        jav_model.__dict__.update(candidate.__dict__)
+    return status, genres
 
 
 def CopyVideoOut(Path):
@@ -77,6 +92,7 @@ def ReadConfig():
 
 
 def Youma(dir_choose, handler):
+    reset_sources()
     #  main开始
     # region（2）准备全局参数
     # 路径分隔符: 当前系统的路径分隔符 windows是“\”，linux和mac是“/”
@@ -157,9 +173,9 @@ def Youma(dir_choose, handler):
                     else:
                         jav_model = JavModel()
                         # region（3.2.2.2）从javdb获取信息
-                        status, genres_db = scrape_from_db(
-                            jav_file, jav_model, handler.url_db,
-                            handler.proxy_db)
+                        status, genres_db = scrape_available(
+                            scrape_from_db, jav_file, jav_model, handler.url_db,
+                            handler.proxy_db, logger)
                         if status == ScrapeStatusEnum.db_not_found:
                             logger.record_warn(
                                 f'javdb找不到该车牌的信息: {jav_file.Car}，')
@@ -171,9 +187,9 @@ def Youma(dir_choose, handler):
                         # endregion
 
                         # region（3.2.2.3）从javlibrary获取信息
-                        status, genres_library = scrape_from_library(
-                            jav_file, jav_model, handler.url_library,
-                            handler.proxy_library)
+                        status, genres_library = scrape_available(
+                            scrape_from_library, jav_file, jav_model, handler.url_library,
+                            handler.proxy_library, logger)
                         if status == ScrapeStatusEnum.library_not_found:
                             logger.record_warn(
                                 f'javlibrary找不到该车牌的信息: {jav_file.Car}，')
@@ -194,9 +210,9 @@ def Youma(dir_choose, handler):
                             continue  # 结束对该jav的整理
 
                         # region（3.2.2.4）前往javbus查找【封面】【系列】【特征】.py
-                        status, genres_bus = scrape_from_bus(
-                            jav_file, jav_model, handler.url_bus,
-                            handler.proxy_bus)
+                        status, genres_bus = scrape_available(
+                            scrape_from_bus, jav_file, jav_model, handler.url_bus,
+                            handler.proxy_bus, logger)
                         if status == ScrapeStatusEnum.bus_multiple_search_results:
                             logger.record_warn(
                                 f'部分信息可能错误，javbus搜索到同车牌的不同视频: {jav_file.Car_id}，'

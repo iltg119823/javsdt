@@ -1,3 +1,4 @@
+from Functions.Web.Http import get_html
 # -*- coding:utf-8 -*-
 import re
 import requests
@@ -9,32 +10,9 @@ from Functions.Utils.XML import replace_xml_win
 
 # 搜索javlibrary，或请求javlibrary上jav所在网页，返回html
 def get_library_html(url, proxy):
-    for retry in range(10):
-        try:
-            if proxy:
-                rqs = requests.get(url, proxies=proxy, timeout=(6, 7))
-            else:
-                rqs = requests.get(url, timeout=(6, 7))
-        except requests.exceptions.ProxyError:
-            # print(format_exc())
-            print('    >通过局部代理失败，重新尝试...')
-            continue
-        except:
-            # print(format_exc())
-            print(f'    >打开网页失败，重新尝试...{url}')
-            continue
-        rqs.encoding = 'utf-8'
-        rqs_content = rqs.text
-        # print(rqs_content)
-        if re.search(r'JAVLibrary', rqs_content):        # 得到想要的网页，直接返回
-            return rqs_content
-        else:                                         # 代理工具返回的错误信息
-            print('    >打开网页失败，空返回...重新尝试...')
-            continue
-    input(f'>>请检查你的网络环境是否可以打开: {url}')
+    return get_html(url, proxy, ('JAVLibrary',), headers={'User-Agent': 'Mozilla/5.0'})
 
 
-# 返回: Status, html_jav_library
 def scrape_from_library(jav_file, jav_model, url_library, proxy_library):
     status = ScrapeStatusEnum.success
     # 用户指定了网址，则直接得到jav所在网址

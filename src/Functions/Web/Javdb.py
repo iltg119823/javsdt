@@ -1,3 +1,4 @@
+from Functions.Web.Http import get_html
 # -*- coding:utf-8 -*-
 from math import ceil
 import re
@@ -13,36 +14,7 @@ from Class.MyError import SpecifiedUrlError
 
 # 请求jav在javdb上的网页，返回html
 def get_db_html(url, proxy):
-    headers = {
-        "user-agent": "Mozilla/5.0 (Windows NT 10.0; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/86.0.4240.198 Safari/537.36",
-    }
-    for retry in range(1, 11):
-        try:
-            if proxy:
-                rqs = requests.get(url, headers=headers, proxies=proxy, timeout=(6, 7))
-            else:
-                rqs = requests.get(url, headers=headers, timeout=(6, 7))
-        except requests.exceptions.ProxyError:
-            # print(format_exc())
-            print('    >通过局部代理失败，重新尝试...')
-            continue
-        except:
-            # print(format_exc())
-            print(f'    >打开网页失败，重新尝试...{url}')
-            continue
-        rqs.encoding = 'utf-8'
-        rqs_content = rqs.text
-        # print(rqs_content)
-        if re.search(r'成人影片數據庫', rqs_content):
-            return rqs_content
-        elif re.search(r'頁面未找到', rqs_content):
-            return rqs_content
-        else:
-            print(rqs_content)
-            print('    >打开网页失败，空返回...重新尝试...')
-            continue
-    input(f'>>请检查你的网络环境是否可以打开: {url}')
+    return get_html(url, proxy, ('JavDB', '頁面未找到'), headers={'User-Agent': 'Mozilla/5.0'})
 
 
 def scrape_from_db(jav_file, jav_model, url_db, proxy_db):

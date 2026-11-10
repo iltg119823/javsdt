@@ -11,3 +11,10 @@ JavSDT maintenance build — Windows 10 x64
 Legacy metadata site addresses may no longer work. This build fixes known
 code defects; successful live scraping has not yet been confirmed.
 Windows executable needs testing on the user's Windows 10 machine.
+
+Second maintenance build:
+Advertising domain prefixes such as 4k688.com@ are ignored during ID detection.
+Failed sources no longer pause for Enter and are skipped for the current run.
+For an existing INI, change the JavDB URL from javdb31.com to https://javdb.com/
+and enable the appropriate proxy settings if required by your network.
+Do not regenerate an existing INI just to change the URL.

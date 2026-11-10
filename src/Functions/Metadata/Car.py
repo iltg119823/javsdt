@@ -7,19 +7,22 @@ import re
 # 返回: 发现的车牌    示例: AVOP-127
 # 辅助: re.search
 def find_car_youma(file, list_suren_car):
+    # Remove advertising domains before searching: 4k688.com@DLDSS-558.mp4.
+    file = file.upper()
+    file = re.sub(r'(?:HTTPS?://)?(?:[A-Z0-9-]+\.)+(?:COM|NET|ORG|CC|ME|TV|XYZ|TOP|SITE|CLUB|VIP)(?=[:/@ _-]|$)[:/@ _-]*', ' ', file)
     # car_pref 车牌前缀 ABP-，带横杠；car_suf，车牌后缀 123。
     # 先处理特例 T28 车牌
-    if re.search(r'[^A-Z]?T28[-_ ]*\d\d+', file):
+    if re.search(r'(?<![A-Z0-9])T28[-_ ]*\d\d+', file):
         car_pref = 'T28-'
         car_suf = re.search(r'T28[-_ ]*(\d\d+)', file).group(1)
     # 以javbus上记录的20ID-020为标准
-    elif re.search(r'[^\d]?\d\dID[-_ ]*\d\d+', file):
+    elif re.search(r'(?<![A-Z0-9])\d\dID[-_ ]*\d\d+', file):
         carg = re.search(r'(\d\d)ID[-_ ]*(\d\d+)', file)
         car_pref = 'ID-'
         car_suf = f'{carg.group(1)}{carg.group(2)}'
     # 一般车牌
-    elif re.search(r'[A-Z]+[-_ ]*\d\d+', file):
-        carg = re.search(r'([A-Z]+)[-_ ]*(\d\d+)', file)
+    elif re.search(r'(?<![A-Z0-9])[A-Z]+[-_ ]*\d\d+', file):
+        carg = re.search(r'(?<![A-Z0-9])([A-Z]+)[-_ ]*(\d\d+)', file)
         car_pref = carg.group(1)
         if car_pref in list_suren_car or car_pref in ['HEYZO', 'PONDO', 'CARIB', 'OKYOHOT']:
             return ''

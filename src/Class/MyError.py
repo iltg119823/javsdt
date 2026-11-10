@@ -9,3 +9,8 @@ class DownloadFanartError(Exception):
 
 class SpecifiedUrlError(Exception):
     pass
+
+
+class SourceUnavailableError(Exception):
+    """A source could not provide a usable page; other sources may continue."""
+    pass

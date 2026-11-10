@@ -1,3 +1,4 @@
+from Functions.Web.Http import get_html
 # -*- coding:utf-8 -*-
 import re
 import requests
@@ -9,32 +10,9 @@ from Class.MyError import SpecifiedUrlError
 
 # 搜索javbus，或请求javbus上jav所在网页，返回html
 def get_bus_html(url, proxy):
-    for retry in range(10):
-        try:
-            if proxy:       # existmag=all为了 获得所有影片，而不是默认的有磁力的链接
-                rqs = requests.get(url, proxies=proxy, timeout=(6, 7), headers={'Cookie': 'existmag=all'})
-            else:
-                rqs = requests.get(url, timeout=(6, 7), headers={'Cookie': 'existmag=all'})
-        except requests.exceptions.ProxyError:
-            print(format_exc())
-            print('    >通过局部代理失败，重新尝试...')
-            continue
-        except:
-            # print(format_exc())
-            print(f'    >打开网页失败，重新尝试...{url}')
-            continue
-        rqs.encoding = 'utf-8'
-        rqs_content = rqs.text
-        if re.search(r'JavBus', rqs_content):
-            return rqs_content
-        else:
-            print('    >打开网页失败，空返回...重新尝试...')
-            continue
-    input(f'>>请检查你的网络环境是否可以打开: {url}')
+    return get_html(url, proxy, ('JavBus',), headers={'User-Agent': 'Mozilla/5.0', 'Cookie': 'existmag=all'})
 
 
-# 去javbus搜寻系列、在javbus的封面链接
-# 返回: 系列名称，图片链接，状态码
 def scrape_from_bus(jav_file, jav_model, url_bus, proxy):
     status = ScrapeStatusEnum.bus_not_found
     # 用户指定了网址，则直接得到jav所在网址

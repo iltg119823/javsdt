@@ -4,7 +4,7 @@ import runpy
 import sys
 import tempfile
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, MagicMock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / 'src'))
@@ -38,7 +38,8 @@ class MaintenanceTests(unittest.TestCase):
 
     def test_javdb_proxy_request(self):
         from Functions.Web.Javdb import get_db_html
-        response = Mock(text='成人影片數據庫')
+        response = MagicMock(text='JavDB 成人影片數據庫')
+        response.__enter__.return_value = response
         proxy = {'https': 'http://localhost:8080'}
         with patch('Functions.Web.Javdb.requests.get', return_value=response) as get:
             self.assertEqual(get_db_html('https://example.test', proxy), response.text)
