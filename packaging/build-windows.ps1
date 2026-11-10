@@ -1,4 +1,6 @@
 $ErrorActionPreference = 'Stop'
+$env:PYTHONUTF8 = '1'
+$env:PYTHONIOENCODING = 'utf-8'
 Set-Location (Split-Path $PSScriptRoot -Parent)
 if (-not $IsWindows -and $env:OS -ne 'Windows_NT') { throw 'Build this package on Windows x64.' }
 python -m pip install -r requirements.txt 'pyinstaller>=6.11,<7'

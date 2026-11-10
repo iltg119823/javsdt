@@ -6,6 +6,9 @@ import traceback
 
 
 def main():
+    for stream in (sys.stdout, sys.stderr):
+        if stream is not None and hasattr(stream, 'reconfigure'):
+            stream.reconfigure(errors='backslashreplace')
     if sys.argv[1:] == ['--self-test']:
         import Youma
         from Functions.Metadata.Genre import better_dict_youma_genres
